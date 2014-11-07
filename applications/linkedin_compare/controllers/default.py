@@ -64,7 +64,6 @@ def view():
                     compare_guys[link].name = html.unescape(name.text)
                 description = soup.find("p", {"class": "description"})
                 if description:
-                    print description.text
                     compare_guys[link].description = html.unescape(description.text)
 
                 skills = soup.findAll("span", {"class": "endorse-item-name-text"})
