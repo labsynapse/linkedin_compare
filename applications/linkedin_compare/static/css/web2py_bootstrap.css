@@ -2,7 +2,11 @@
                        CUSTOM RULES
 ==============================================================*/
 
-body{height:auto;} /* to avoid vertical scroll bar */
+body{
+    min-height:600px;
+    height:auto;
+
+} /* to avoid vertical scroll bar */
 
 a{}
 a:visited{}

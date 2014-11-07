@@ -1,0 +1,29 @@
+{{extend 'layout.html'}}
+
+<h3>Choose a profile:</h3>
+<!-- Nav tabs -->
+<ul class="nav nav-tabs" role="tablist">
+ {{for id, guy in enumerate(compare_guys):}}
+  <li role="presentation"><a href="#{{=id}}" role="tab" data-toggle="tab">{{=compare_guys[guy].name}}</a></li>
+{{pass}}
+</ul>
+
+<!-- Tab panes -->
+<div class="tab-content">
+{{for id, guy in enumerate(compare_guys):}}
+  <div role="tabpanel" class="tab-pane text-center" id="{{=id}}">
+        {{=IMG(_src=compare_guys[guy].image, _alt=compare_guys[guy].name)}}<br><br>
+    <div>
+        {{=A('View full profile', _class='button btn btn-default', _href=guy, _target='_blank')}}<br><br>
+
+        <p class="well text-center">{{=compare_guys[guy].description}}</p>
+        <p>
+        {{for skill in compare_guys[guy].skills:}}
+                <button class="button">{{=skill}}</button>
+        {{pass}}
+        </p>
+
+    </div>
+   </div>
+{{pass}}
+</div>

@@ -1,3 +1,6 @@
 {{extend 'layout.html'}}
 
 {{=form}}
+{{if link:}}
+    This is your link: {{=A(link, _href=link)}}
+{{pass}}

@@ -14,73 +14,63 @@ def index():
     Put your code and select translate language to use bing translator to
     translate
     """
-
-    response.flash = T("Welcome to Web2py Translate!")
-
-    form = SQLFORM.factory(Field('file', 'text', requires=IS_NOT_EMPTY()))
+    from base64 import standard_b64encode
+    form = SQLFORM.factory(Field('links', 'list:string',
+                                 label='Write here LinkedIn Public urls',
+                                 requires=IS_URL()))
+    link = None
     if form.process().accepted:
+        links = form.vars.links
+        if not isinstance(links, list):
+            links = [links]
+        link = URL('default', 'view', args=standard_b64encode(','.join(links)),
+                   scheme=True)
+    return dict(form=form, link=link)
+
+def view():
+    from base64 import standard_b64decode
+    import BeautifulSoup
+    from gluon.storage import Storage
+    import urllib2
+    import HTMLParser
+
+    if request.args(0):
         try:
-            session.file = dict()
-            lang_file = eval(form.vars.file)
-            for key in lang_file:
-                if key:
-                    session.file[base64.standard_b64encode(key)] = lang_file[key]
+            links = standard_b64decode(request.args(0)).split(',')
         except:
-            response.flash = T("Wrong file format... Try again")
-        redirect(URL('translate'))
-    return dict(form=form)
+            raise HTTP(400)
 
-def translate():
-    import textwrap
-    fields = list()
-    for key in session.file:
-        fields.append(Field(key, 'text',
-                            default=session.file[key],
-                            label=XML('<br>'.join(textwrap.wrap(base64.standard_b64decode(key),100)))))
+        compare_guys = Storage()
+        html = HTMLParser.HTMLParser()
+        for link in links:
+            if link:
+                if not link.startswith('http'):
+                    link = 'http://'+link
+                compare_guys[link] = Storage()
+                opener = urllib2.build_opener()
+                opener.addheaders = [('User-agent', 'Mozilla/5.0')]
+                response = opener.open(link)
+                html_content = response.read()
+                soup = BeautifulSoup.BeautifulSoup(html_content)
 
-    form = SQLFORM.factory(*fields)
+                image_div = soup.findChild("div", {"class": "profile-picture"})
+                if image_div:
+                    img_link = dict(image_div.find('img').attrs)
+                    if img_link:
+                        compare_guys[link].image = img_link['src']
 
-    if form.accepts(request.vars, session, keepvalues=True):
-        for enc_translates in session.file:
-            session.file[enc_translates] = form.vars[enc_translates]
+                name = soup.find("span", {"class": "full-name"})
+                if name:
+                    compare_guys[link].name = html.unescape(name.text)
+                description = soup.find("p", {"class": "description"})
+                if description:
+                    print description.text
+                    compare_guys[link].description = html.unescape(description.text)
 
-    return dict(form=form)
+                skills = soup.findAll("span", {"class": "endorse-item-name-text"})
+                compare_guys[link].skills = list()
+                for skill in skills:
+                    if skill.text:
+                        compare_guys[link].skills.append(html.unescape(skill.text))
 
-def do_automatic():
-
-    if request.vars._from and request.vars._to:
-        for key in session.file:
-            if base64.standard_b64decode(key) == session.file[key] or not session.file[key]:
-                session.file[key] = _automatic_translate(session.file[key],
-                                                         request.vars._from,
-                                                         request.vars._to)[4:-1]  # removing trash
-
-    redirect(URL('translate'))
-
-def _automatic_translate(_text, _from, _to):
-    import json
-    import requests
-    import urllib
-    args = {
-            'client_id': CLIENT_ID,#your client id here
-            'client_secret': CLIENT_SECRET,#your azure secret here
-            'scope': 'http://api.microsofttranslator.com',
-            'grant_type': 'client_credentials'
-    }
-    oauth_url = 'https://datamarket.accesscontrol.windows.net/v2/OAuth2-13'
-    oauth_junk = json.loads(requests.post(oauth_url, data=urllib.urlencode(args)).content)
-    translation_args = {
-            'text': _text,
-            'to': _to,
-            'from': _from
-    }
-    headers = {'Authorization': 'Bearer '+oauth_junk['access_token']}
-    translation_url = 'http://api.microsofttranslator.com/V2/Ajax.svc/Translate?'
-    translation_result = requests.get(translation_url+urllib.urlencode(translation_args), headers=headers)
-    return translation_result.content
-
-def export():
-    translated_file = dict()
-    for item in session.file:
-        translated_file[base64.standard_b64decode(item)] = session.file[item]
-    return dict(t_file=translated_file)
+    return dict(compare_guys=compare_guys)
