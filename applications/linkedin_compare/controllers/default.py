@@ -72,5 +72,7 @@ def view():
                 for skill in skills:
                     if skill.text:
                         compare_guys[link].skills.append(html.unescape(skill.text))
+    else:
+        raise HTTP(400)
 
     return dict(compare_guys=compare_guys)
