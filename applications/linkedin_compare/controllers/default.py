@@ -16,15 +16,20 @@ def index():
     """
     from base64 import standard_b64encode
     form = SQLFORM.factory(Field('links', 'list:string',
-                                 label='Write here LinkedIn Public urls',
-                                 requires=IS_URL()))
+                                 label='Write here LinkedIn Public urls'))
     link = None
+    validator = IS_URL()
     if form.process().accepted:
         links = form.vars.links
         if not isinstance(links, list):
             links = [links]
-        link = URL('default', 'view', args=standard_b64encode(','.join(links)),
-                   scheme=True)
+        for l in links:
+            if l and validator(l)[1] and 'linkedin.com' in l:
+                form.errors.links = 'Please fill only with urls'
+        if not form.errors.links:
+            link = URL('default', 'view',
+                       args=standard_b64encode(','.join(links)),
+                       scheme=True)
     return dict(form=form, link=link)
 
 def view():
