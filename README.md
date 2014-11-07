@@ -13,16 +13,16 @@ Installation
 
 For local installation just:
 
-```
-make install
-```
+
+    make install
+    pip install -r requirements.txt
+
 
 Than:
 
 
-```
-make run
-```
+    make run
+
 
 will open a webserver in port 8000.
 
